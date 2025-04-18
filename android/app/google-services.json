@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "483796313572",
+    "project_id": "vkr-bff",
+    "storage_bucket": "vkr-bff.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:483796313572:android:7c5bcfabd0130184be53f1",
+        "android_client_info": {
+          "package_name": "com.example.vkr_test"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDlphKVm2SpuWGW5W63FZu9pq09rmVusmY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
