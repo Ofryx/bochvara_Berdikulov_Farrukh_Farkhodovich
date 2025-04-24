@@ -1,52 +1,23 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-class LineCHART_speed extends StatefulWidget {
-  LineCHART_speed({super.key});
+class LineCHART_speed extends StatelessWidget {
+  const LineCHART_speed({super.key});
 
-  @override
-  State<LineCHART_speed> createState() => _LineCHART_speedState();
-}
-
-class _LineCHART_speedState extends State<LineCHART_speed> {
-  List<FlSpot> spots = [];
-  int time = 0;
-  Random random = Random();
-
-  @override
-  void initState() {
-    super.initState();
-    _startUpdating();
-  }
-
-  void _startUpdating() {
-    Timer.periodic(Duration(seconds: 1), (timer) {
-      setState(() {
-        // Генерируем случайную скорость в диапазоне 0-100
-        double speed = random.nextDouble() * 100; // Диапазон от 0 до 100
-
-        spots.add(FlSpot(time.toDouble(), speed));
-
-        if (spots.length > 20) {
-          spots.removeAt(0);
-        }
-        time++;
-      });
-    });
-  }
-
+  // Метод для отображения заголовков на левой оси (скорость вращения)
   Widget leftTitleWidgets(double value, TitleMeta meta, double chartWidth) {
     final style = TextStyle(
       color: Color.fromARGB(255, 14, 47, 73),
       fontWeight: FontWeight.bold,
-      fontSize: min(18, 18 * chartWidth / 300),
+      fontSize: min(14, 14 * chartWidth / 300), // Размер шрифта для подписей
     );
     return SideTitleWidget(
       meta: meta,
-      space: 16,
-      child: Text(meta.formattedValue, style: style),
+      space: 10, // Отступ
+      child: Text('${value.toStringAsFixed(0)} об/мин', style: style), // Подпись для скорости
     );
   }
 
@@ -73,7 +44,7 @@ class _LineCHART_speedState extends State<LineCHART_speed> {
           children: [
             Center(
               child: Text(
-                'Скорость',
+                'Скорость вращения барабана',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -82,79 +53,93 @@ class _LineCHART_speedState extends State<LineCHART_speed> {
               ),
             ),
             SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: AspectRatio(
-                aspectRatio: 1,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return LineChart(
-                      LineChartData(
-                        lineTouchData: LineTouchData(
-                          touchTooltipData: LineTouchTooltipData(
-                            maxContentWidth: 100,
-                            getTooltipColor: (touchedSpot) => Colors.black,
-                            getTooltipItems: (touchedSpots) {
-                              return touchedSpots.map((touchedSpot) {
-                                return LineTooltipItem(
-                                  '${touchedSpot.y.toStringAsFixed(2)}',
-                                  TextStyle(
-                                    color: touchedSpot.bar.color,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                );
-                              }).toList();
-                            },
-                          ),
-                          handleBuiltInTouches: true,
-                          getTouchLineStart: (data, index) => 0,
-                        ),
-                        lineBarsData: [
-                          LineChartBarData(
-                            color: Colors.blue,
-                            spots: spots,
-                            isCurved: true,
-                            isStrokeCapRound: true,
-                            barWidth: 3,
-                            belowBarData: BarAreaData(show: false),
-                            dotData: const FlDotData(show: false),
-                          ),
-                        ],
-                        minY: 0, // Минимальная скорость
-                        maxY: 100, // Максимальная скорость
-                        titlesData: FlTitlesData(
-                          leftTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: (value, meta) =>
-                                  leftTitleWidgets(value, meta, constraints.maxWidth),
-                              reservedSize: 56,
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('sensor_data')
+                  .orderBy('timestamp', descending: true)
+                  .limit(20)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return Center(child: CircularProgressIndicator());
+                }
+
+                final docs = snapshot.data!.docs.reversed.toList();
+                List<FlSpot> spots = [];
+
+                // Добавляем данные с Firebase в список точек графика
+                for (int i = 0; i < docs.length; i++) {
+                  final data = docs[i].data() as Map<String, dynamic>;
+                  final speed = (data['speed'] ?? 0).toDouble();
+                  spots.add(FlSpot(i.toDouble(), speed));
+                }
+
+                return AspectRatio(
+                  aspectRatio: 1,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return LineChart(
+                        LineChartData(
+                          lineTouchData: LineTouchData(
+                            touchTooltipData: LineTouchTooltipData(
+                              getTooltipItems: (touchedSpots) {
+                                return touchedSpots.map((spot) {
+                                  return LineTooltipItem(
+                                    '${spot.y.toStringAsFixed(2)} об/мин', // Изменено на об/мин
+                                    TextStyle(
+                                      color: spot.bar.color,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  );
+                                }).toList();
+                              },
                             ),
                           ),
-                          rightTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
+                          lineBarsData: [
+                            LineChartBarData(
+                              spots: spots,
+                              isCurved: true,
+                              color: Colors.blue,
+                              barWidth: 3,
+                              belowBarData: BarAreaData(show: false),
+                              dotData: FlDotData(show: false),
+                            ),
+                          ],
+                          minY: 0, // Минимальная скорость
+                          maxY: 10, // Максимальная скорость
+                          titlesData: FlTitlesData(
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) =>
+                                    leftTitleWidgets(value, meta, constraints.maxWidth),
+                                reservedSize: 60,
+                              ),
+                            ),
+                            rightTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            topTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
                           ),
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
+                          gridData: FlGridData(
+                            show: true,
+                            drawHorizontalLine: true,
+                            drawVerticalLine: true,
+                            horizontalInterval: 10,
+                            verticalInterval: 5,
                           ),
-                          topTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
+                          borderData: FlBorderData(show: false),
                         ),
-                        gridData: FlGridData(
-                          show: true,
-                          drawHorizontalLine: true,
-                          drawVerticalLine: true,
-                          horizontalInterval: 20,
-                          verticalInterval: 10,
-                        ),
-                        borderData: FlBorderData(show: false),
-                      ),
-                    );
-                  },
-                ),
-              ),
+                      );
+                    },
+                  ),
+                );
+              },
             ),
           ],
         ),

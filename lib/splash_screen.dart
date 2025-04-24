@@ -17,7 +17,7 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
 
-    Future.delayed(Duration(seconds: 5), () {
+    Future.delayed(Duration(seconds: 3), () {
       Navigator.of(
         context,
       ).pushReplacement(MaterialPageRoute(builder: (_) => LoginPage(onTap: () {  },)));  // LoginPage(onTap: () {  },)
@@ -51,7 +51,7 @@ class _SplashScreenState extends State<SplashScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: Text(
                 // "Выпускная квалификационная работа Бердикулов Фаррух Фарходович \nДата: 03.03.25"
-                "Курсвоая работа \n\nБердикулов Фаррух",
+                "Работа для конкурса проектных работ имени академика А.А.Бочвара \n \nБердикулов Фаррух \nФарходович",
                 textAlign:
                     TextAlign.center,
                 style: TextStyle(

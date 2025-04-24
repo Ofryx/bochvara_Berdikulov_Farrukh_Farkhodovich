@@ -1,52 +1,21 @@
-import 'dart:async';
-import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'dart:math';
 
-class LineCHART_humidity extends StatefulWidget {
+class LineCHART_humidity extends StatelessWidget {
   LineCHART_humidity({super.key});
-
-  @override
-  State<LineCHART_humidity> createState() => _LineCHART_humidityState();
-}
-
-class _LineCHART_humidityState extends State<LineCHART_humidity> {
-  List<FlSpot> spots = [];
-  int time = 0;
-  Random random = Random();
-
-  @override
-  void initState() {
-    super.initState();
-    _startUpdating();
-  }
-
-  void _startUpdating() {
-    Timer.periodic(Duration(seconds: 1), (timer) {
-      setState(() {
-        // Генерируем случайную влажность в диапазоне 40-60%
-        double humidity = 50 + random.nextDouble() * 10 - 5; // Отклонение ±5%
-
-        spots.add(FlSpot(time.toDouble(), humidity));
-
-        if (spots.length > 20) {
-          spots.removeAt(0);
-        }
-        time++;
-      });
-    });
-  }
 
   Widget leftTitleWidgets(double value, TitleMeta meta, double chartWidth) {
     final style = TextStyle(
       color: Color.fromARGB(255, 14, 47, 73),
       fontWeight: FontWeight.bold,
-      fontSize: min(18, 18 * chartWidth / 300),
+      fontSize: min(14, 14 * chartWidth / 300), // Было 18, стало 14
     );
     return SideTitleWidget(
       meta: meta,
-      space: 16,
-      child: Text(meta.formattedValue, style: style),
+      space: 8, // Чуть меньше отступ
+      child: Text('${value.toStringAsFixed(0)}%', style: style), // Только целое значение + "°"
     );
   }
 
@@ -82,79 +51,90 @@ class _LineCHART_humidityState extends State<LineCHART_humidity> {
               ),
             ),
             SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: AspectRatio(
-                aspectRatio: 1,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return LineChart(
-                      LineChartData(
-                        lineTouchData: LineTouchData(
-                          touchTooltipData: LineTouchTooltipData(
-                            maxContentWidth: 100,
-                            getTooltipColor: (touchedSpot) => Colors.black,
-                            getTooltipItems: (touchedSpots) {
-                              return touchedSpots.map((touchedSpot) {
-                                return LineTooltipItem(
-                                  '${touchedSpot.y.toStringAsFixed(2)}%',
-                                  TextStyle(
-                                    color: touchedSpot.bar.color,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                );
-                              }).toList();
-                            },
-                          ),
-                          handleBuiltInTouches: true,
-                          getTouchLineStart: (data, index) => 0,
-                        ),
-                        lineBarsData: [
-                          LineChartBarData(
-                            color: Colors.blue,
-                            spots: spots,
-                            isCurved: true,
-                            isStrokeCapRound: true,
-                            barWidth: 3,
-                            belowBarData: BarAreaData(show: false),
-                            dotData: const FlDotData(show: false),
-                          ),
-                        ],
-                        minY: 40, // Минимальная влажность
-                        maxY: 60, // Максимальная влажность
-                        titlesData: FlTitlesData(
-                          leftTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: (value, meta) =>
-                                  leftTitleWidgets(value, meta, constraints.maxWidth),
-                              reservedSize: 56,
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('sensor_data')
+                  .orderBy('timestamp', descending: true)
+                  .limit(20)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return Center(child: CircularProgressIndicator());
+                }
+
+                final docs = snapshot.data!.docs.reversed.toList();
+                List<FlSpot> spots = [];
+
+                for (int i = 0; i < docs.length; i++) {
+                  final data = docs[i].data() as Map<String, dynamic>;
+                  final humidity = (data['humidity'] ?? 0).toDouble();
+                  spots.add(FlSpot(i.toDouble(), humidity));
+                }
+
+                return AspectRatio(
+                  aspectRatio: 1,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return LineChart(
+                        LineChartData(
+                          lineTouchData: LineTouchData(
+                            touchTooltipData: LineTouchTooltipData(
+                              getTooltipItems: (touchedSpots) {
+                                return touchedSpots.map((spot) {
+                                  return LineTooltipItem(
+                                    '${spot.y.toStringAsFixed(1)}°', // Формат для влажности
+                                    TextStyle(
+                                      color: spot.bar.color,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  );
+                                }).toList();
+                              },
                             ),
                           ),
-                          rightTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
+                          lineBarsData: [
+                            LineChartBarData(
+                              spots: spots,
+                              isCurved: true,
+                              color: Colors.indigo,
+                              barWidth: 3,
+                              belowBarData: BarAreaData(show: false),
+                              dotData: FlDotData(show: false),
+                            ),
+                          ],
+                          minY: 0, // Минимум для влажности
+                          maxY: 100, // Максимум для влажности
+                          titlesData: FlTitlesData(
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) =>
+                                    leftTitleWidgets(value, meta, constraints.maxWidth),
+                                reservedSize: 56,
+                              ),
+                            ),
+                            rightTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            topTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
                           ),
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(showTitles: false), // Убрали ось X
+                          gridData: FlGridData(
+                            show: true,
+                            horizontalInterval: 10, // Интервал для влажности
+                            verticalInterval: 5,
                           ),
-                          topTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
+                          borderData: FlBorderData(show: false),
                         ),
-                        gridData: FlGridData(
-                          show: true,
-                          drawHorizontalLine: true,
-                          drawVerticalLine: true,
-                          horizontalInterval: 2,
-                          verticalInterval: 5,
-                        ),
-                        borderData: FlBorderData(show: false),
-                      ),
-                    );
-                  },
-                ),
-              ),
+                      );
+                    },
+                  ),
+                );
+              },
             ),
           ],
         ),
