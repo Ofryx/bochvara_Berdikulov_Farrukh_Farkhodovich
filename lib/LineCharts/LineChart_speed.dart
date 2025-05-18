@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -12,12 +11,12 @@ class LineCHART_speed extends StatelessWidget {
     final style = TextStyle(
       color: Color.fromARGB(255, 14, 47, 73),
       fontWeight: FontWeight.bold,
-      fontSize: min(14, 14 * chartWidth / 300), // Размер шрифта для подписей
+      fontSize: min(12, 12 * chartWidth / 300),
     );
     return SideTitleWidget(
       meta: meta,
       space: 10, // Отступ
-      child: Text('${value.toStringAsFixed(0)} об/мин', style: style), // Подпись для скорости
+      child: Center(child: Text('${value.toStringAsFixed(0)} Об/м', style: style)), 
     );
   }
 
@@ -85,7 +84,7 @@ class LineCHART_speed extends StatelessWidget {
                               getTooltipItems: (touchedSpots) {
                                 return touchedSpots.map((spot) {
                                   return LineTooltipItem(
-                                    '${spot.y.toStringAsFixed(2)} об/мин', // Изменено на об/мин
+                                    '${spot.y.toStringAsFixed(2)} об/мин', 
                                     TextStyle(
                                       color: spot.bar.color,
                                       fontWeight: FontWeight.bold,

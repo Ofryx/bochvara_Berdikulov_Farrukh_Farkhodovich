@@ -1,23 +1,29 @@
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'dart:math';
 
 class LineCHART_pressure extends StatelessWidget {
   LineCHART_pressure({super.key});
 
-  // Метод для отображения заголовков на левой оси (давление в Паскалях)
+  // Метод для отображения заголовков на левой оси (давление в Па)
   Widget leftTitleWidgets(double value, TitleMeta meta, double chartWidth) {
     final style = TextStyle(
       color: Color.fromARGB(255, 14, 47, 73),
       fontWeight: FontWeight.bold,
-      fontSize: min(14, 14 * chartWidth / 300), // Размер шрифта для подписей
+      fontSize: min(12, 12 * chartWidth / 300),
     );
-    return SideTitleWidget(
-      meta: meta,
-      space: 8, // Отступ
-      child: Text('${value.toStringAsFixed(0)} Па', style: style), // Отображаем давление в Паскалях
-    );
+
+    // Показываем только значения с шагом 20 Па, начиная с 950
+    if (value % 20 == 0 && value >= 950 && value <= 1050) {
+      return SideTitleWidget(
+        meta: meta,
+        space: 6,
+        child: Text('${value.toStringAsFixed(0)} Pa', style: style),
+      );
+    } else {
+      return Container(); // Не отображаем лишние подписи
+    }
   }
 
   @override
@@ -52,7 +58,6 @@ class LineCHART_pressure extends StatelessWidget {
               ),
             ),
             SizedBox(height: 10),
-            // StreamBuilder для получения данных из Firebase
             StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('sensor_data')
@@ -67,7 +72,6 @@ class LineCHART_pressure extends StatelessWidget {
                 final docs = snapshot.data!.docs.reversed.toList();
                 List<FlSpot> spots = [];
 
-                // Добавляем данные с Firebase в список точек графика
                 for (int i = 0; i < docs.length; i++) {
                   final data = docs[i].data() as Map<String, dynamic>;
                   final pressure = (data['pressure'] ?? 0).toDouble();
@@ -85,7 +89,7 @@ class LineCHART_pressure extends StatelessWidget {
                               getTooltipItems: (touchedSpots) {
                                 return touchedSpots.map((spot) {
                                   return LineTooltipItem(
-                                    '${spot.y.toStringAsFixed(1)} Па', // Изменено на Па
+                                    '${spot.y.toStringAsFixed(1)} Pa',
                                     TextStyle(
                                       color: spot.bar.color,
                                       fontWeight: FontWeight.bold,
@@ -105,15 +109,15 @@ class LineCHART_pressure extends StatelessWidget {
                               dotData: FlDotData(show: false),
                             ),
                           ],
-                          minY: 950,  // Установите минимальное значение для оси Y в зависимости от данных
-                          maxY: 1050, // Установите максимальное значение для оси Y
+                          minY: 950,
+                          maxY: 1050,
                           titlesData: FlTitlesData(
                             leftTitles: AxisTitles(
                               sideTitles: SideTitles(
                                 showTitles: true,
                                 getTitlesWidget: (value, meta) =>
                                     leftTitleWidgets(value, meta, constraints.maxWidth),
-                                reservedSize: 56, // Увеличение размера для подписей
+                                reservedSize: 60,
                               ),
                             ),
                             rightTitles: AxisTitles(
@@ -128,7 +132,7 @@ class LineCHART_pressure extends StatelessWidget {
                           ),
                           gridData: FlGridData(
                             show: true,
-                            horizontalInterval: 2,
+                            horizontalInterval: 20, // шаг 20 Па
                             verticalInterval: 5,
                           ),
                           borderData: FlBorderData(show: false),

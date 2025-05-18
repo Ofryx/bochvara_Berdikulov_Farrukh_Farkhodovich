@@ -1,6 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:vkr_test/home_page.dart';
 import 'package:vkr_test/settings/firebase_options.dart';
 import 'package:vkr_test/splash_screen.dart';
 
@@ -23,7 +22,7 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'ВКР Бердикулов Ф.Ф.',
-      home: HomePage(),//SplashScreen(title: 'Flutter Demo Home Page')
+      home: SplashScreen(title: 'Flutter Demo Home Page'),
     );
   }
 }

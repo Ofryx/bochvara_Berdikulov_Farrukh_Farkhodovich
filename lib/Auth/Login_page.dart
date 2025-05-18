@@ -63,14 +63,15 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xffFFFFFF),
+      backgroundColor: Colors.blueAccent,//Color(0xffFFFFFF),
       body: SingleChildScrollView(
         child: SafeArea(
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SizedBox(height: 120),
+                SizedBox(height: 45),
+                Image.asset("lib/assets/Misis_white.png"),
                 // Логотип
                 Center(
                   child: Text(
@@ -114,7 +115,7 @@ class _LoginPageState extends State<LoginPage> {
                         onTap: () {},
                         child: Text(
                           "Забыли пароль?",
-                          style: TextStyle(color: Color(0xff003459)),
+                          style: TextStyle(color: Colors.white70),
                         ),
                       ),
                     ],
@@ -179,7 +180,7 @@ class _LoginPageState extends State<LoginPage> {
                       child: Text(
                         "ТЕХ.ПОДДЕРЖКА",
                         style: TextStyle(
-                          color: Colors.indigo,
+                          color: Colors.white70,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
